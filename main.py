@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-import requests
 import sqlite3
 import json
-import schedule
 import time
 import logging
 from datetime import datetime, timedelta
+import schedule
+import requests
 
 # Set up logging
 logging.basicConfig(
@@ -24,10 +24,10 @@ def request_data(api_url):
         'method': 'suix_getLatestSuiSystemState',
         'params': []
     }
-    response = requests.post(api_url, headers=headers, json=data)
+    response = requests.post(api_url, headers=headers, json=data, timeout=30)
     return response.json()
 
-def store_data_in_database(json_data, api_url,network):
+def store_data_in_database(json_data,network):
     epoch = json_data['result']['epoch']
     active_validators = json_data['result']['activeValidators']
 
@@ -92,7 +92,7 @@ def update_apy(api_url, network):
         'method': 'suix_getValidatorsApy',
         'params': []
     }
-    response = requests.post(api_url, headers=headers, json=data)
+    response = requests.post(api_url, headers=headers, json=data, timeout=30)
     json_data = response.json()
 
     connection = sqlite3.connect(f'{network}_data.db')
@@ -148,7 +148,7 @@ def check_and_run_job(api_url,network):
     if result is None:
         logging.info("No data found in the database. Running job to fetch and store data...")
         json_data = request_data(api_url)
-        store_data_in_database(json_data, api_url,network)
+        store_data_in_database(json_data,network)
         update_apy(api_url,network)
     else:
         logging.info("Data already exists in the database. Skipping job on startup.")
@@ -186,8 +186,8 @@ def print_time_left(api_url):
     # Format the next epoch datetime for display
     next_epoch_formatted = next_epoch_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
-    logging.info(f"Time left until next epoch: {minutes_left} minutes")
-    logging.info(f"Next epoch will occur at: {next_epoch_formatted}")
+    logging.info("Time left until next epoch: %s minutes", minutes_left)
+    logging.info("Next epoch will occur at: %s",next_epoch_formatted)
     logging.info(40 * '-')
 
 def main():
@@ -209,7 +209,7 @@ def main():
 
     # Calculate and print time left until next epoch every 1 minute
     schedule.every(1).minutes.do(print_time_left, api_url=api_url)
-    
+
     # Schedule the job to run every day at 20:00
     schedule.every().day.at('20:00').do(check_and_run_job, api_url=api_url, network=network)
 
