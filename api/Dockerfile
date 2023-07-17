@@ -13,5 +13,7 @@ RUN apk --no-cache add gcc musl-dev libffi-dev openssl-dev && \
 # Copy the source code into the container
 COPY main.py config.json ./
 
+EXPOSE 8000
+
 # Run your program when the container starts
 CMD ["python", "main.py"]
