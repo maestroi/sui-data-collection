@@ -1,0 +1,8 @@
+{
+    "api_url": "https://fullnode.mainnet.sui.io:443",
+    "network": "mainnet",
+    "mysql_username": "root",
+    "mysql_password": "V3SoOMIt2TokFfX6Gxbr",
+    "mysql_database": "sui",
+    "mysql_host": "mariadb"
+}

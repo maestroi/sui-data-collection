@@ -1,0 +1,42 @@
+version: '3'
+services:
+  datacollector-mainnet:
+    build: ./scraper
+    container_name: datacollector-mainnet
+    restart: unless-stopped
+    environment:
+      CONFIG_FILE: "config_mainnet.json"
+    depends_on:
+      - mariadb
+  datacollector-testnet:
+    build: ./scraper
+    container_name: datacollector-testnet
+    restart: unless-stopped
+    environment:
+      CONFIG_FILE: "config_testnet.json"
+    depends_on:
+      - mariadb
+  api:
+    build: ./api
+    container_name: api
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+    ports:
+      - "8080:8000"
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "V3SoOMIt2TokFfX6Gxbr"
+      MYSQL_DATABASE: sui
+      MYSQL_USER: sui
+      MYSQL_PASSWORD: "V3SoOMIt2TokFfX6Gxbr"
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+volumes:
+  mysql-data:
