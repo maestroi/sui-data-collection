@@ -186,7 +186,7 @@ def print_time_left(api_url):
     epoch_start_timestamp_ms = json_data['result']['epochStartTimestampMs']
     epoch_duration_ms = json_data['result']['epochDurationMs']
     current_epoch = json_data['result']['epoch']
-    next_epoch = current_epoch + 1
+    next_epoch = int(current_epoch) + 1
 
     # Convert epoch start timestamp to local time
     epoch_start_timestamp = datetime.fromtimestamp(int(epoch_start_timestamp_ms) / 1000)
