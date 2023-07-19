@@ -94,7 +94,7 @@ def store_data_in_database(json_data, network):
         logging.error(f"Error updating row: {err}")
 
 
-def update_apy(api_url, network):
+def update_apy(api_url, network, epoch):
     headers = {'Content-Type': 'application/json'}
     data = {
         'jsonrpc': '2.0',
@@ -113,7 +113,7 @@ def update_apy(api_url, network):
         for apy_data in apys:
             address = apy_data['address']
             apy = apy_data['apy']
-            cursor.execute('''UPDATE system_state SET apy = %s WHERE sui_address = %s and network = %s''', (apy, address, network))
+            cursor.execute('''UPDATE system_state SET apy = %s WHERE sui_address = %s and network = %s and epoch = %s''', (apy, address, network,epoch))
             mydb.commit()
 
         cursor.close()
@@ -174,7 +174,7 @@ def check_and_run_job(api_url, network):
             logging.info("No data found for %s. Running job to fetch and store data...", current_epoch)
             json_data = request_data(api_url)
             store_data_in_database(json_data, network)
-            update_apy(api_url, network)
+            update_apy(api_url, network, current_epoch)
         else:
             logging.info("Data already exists in the database. Skipping job on startup.")
             logging.info("Waiting until epoch changes to run job again...")
