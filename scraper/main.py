@@ -49,6 +49,11 @@ def request_data(api_url):
     response = requests.post(api_url, headers=headers, json=data, timeout=30)
     return response.json()
 
+def request_epoch(api_url):
+    data = request_data(api_url)
+    epoch = data['result']['epoch']
+    return epoch
+
 def store_data_in_database(json_data, network):
     epoch = json_data['result']['epoch']
     active_validators = json_data['result']['activeValidators']
@@ -154,14 +159,19 @@ def create_database(network):
         logging.error(f"Error updating row: {err}")
 
 def check_and_run_job(api_url, network):
+    current_epoch = request_epoch(api_url)
+    logging.info("Current epoch: %s", current_epoch)
+
     try:
         mydb = pool.get_connection()
         cursor = mydb.cursor()
-        cursor.execute('''SELECT epoch FROM system_state ORDER BY epoch DESC LIMIT 1''')
+        cursor.execute("SELECT epoch FROM system_state WHERE network = %s ORDER BY epoch DESC LIMIT 1", (network,))
         result = cursor.fetchone()
 
-        if result is None:
-            logging.info("No data found in the database. Running job to fetch and store data...")
+        logging.info("Last epoch in the database: %s", result[0])
+
+        if result is None or current_epoch != result[0]:
+            logging.info("No data found for %s. Running job to fetch and store data...", current_epoch)
             json_data = request_data(api_url)
             store_data_in_database(json_data, network)
             update_apy(api_url, network)
@@ -171,7 +181,7 @@ def check_and_run_job(api_url, network):
         cursor.close()
         mydb.close()
     except mysql.connector.Error as err:
-        logging.error(f"Error updating row: {err}")
+        logging.error(f"Error selecting row: {err}")
 
 def calculate_time_left(epoch_start_timestamp_ms, epoch_duration_ms):
     current_timestamp_ms = int(time.time() * 1000)
