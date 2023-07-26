@@ -109,11 +109,15 @@ async def get_system_states(network: str = 'mainnet', epoch: int = None):
 
 
 @app.get("/api/csv")
-async def download_system_states(network: str = 'mainnet', epoch: int = None):
+async def download_system_states(network: str = 'mainnet', epoch: int = None, name: str = None):
     mydb = pool.get_connection()
     cursor = mydb.cursor()
     try:
-        query = f"SELECT * FROM system_state WHERE network = '{network}';"
+        query = f"SELECT * FROM system_state WHERE network = '{network}'"
+        if name:
+            query += f" AND name = '{name}'"
+        query += ";"
+
         cursor.execute(query)
         results = cursor.fetchall()
 
