@@ -176,7 +176,7 @@ def check_and_run_job(api_url, network):
             store_data_in_database(json_data, network)
             update_apy(api_url, network, current_epoch)
         else:
-            logging.info("Data already exists in the database. Skipping job on startup.")
+            logging.info("Data already exists in the database. Skipping job")
             logging.info("Waiting until epoch changes to run job again...")
         cursor.close()
         mydb.close()
@@ -233,8 +233,8 @@ def main():
     # Calculate and print time left until next epoch every 1 minute
     schedule.every(10).minutes.do(print_time_left, api_url=api_url)
 
-    # Schedule the job to run every day at 20:00
-    schedule.every().day.at('20:00').do(check_and_run_job, api_url=api_url, network=network)
+    # Schedule the job to run every 60 minutes
+    schedule.every(60).minutes.do(check_and_run_job, api_url=api_url, network=network)
 
     # Run the scheduled tasks
     while True:
