@@ -3,19 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APY over Epoch</title>
+    <title>Sui stats</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chart-container {
+            max-width: 50%;
+            margin: 0 auto;
+            float: left;
+        }
+        .filter-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filter-container input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <div>
+    <div class="filter-container">
         <label for="filterInput">Filter by Name:</label>
         <input type="text" id="filterInput" placeholder="Enter name" value="Blockdaemon">
     </div>
-    <div style="max-width: 800px; margin: 0 auto;">
-        <canvas id="apyChart" style="height: 400px;"></canvas>
+    <div class="container mx-auto">
+        <div class="chart-container">
+            <canvas id="apyChart" style="height: 500px;"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="gasPriceChart" style="height: 500px;"></canvas>
+        </div>
     </div>
-    <div style="max-width: 800px; margin: 0 auto;">
-        <canvas id="gasPriceChart" style="height: 400px;"></canvas>
+    <div class="container mx-auto">
+        <div class="chart-container">
+            <canvas id="commisionRateChart" style="height: 500px;"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="stakeChart" style="height: 500px;"></canvas>
+        </div>
+    </div>
+    <div class="container mx-auto">
+        <div class="chart-container">
+            <canvas id="votePowerChart" style="height: 500px;"></canvas>
+        </div>
     </div>
 
     <script>
@@ -29,8 +65,9 @@
                     apy: item.apy,
                     name: item.name,
                     gas_price: item.gas_price,
-                    commission_rate: item.commission_rate
-
+                    commission_rate: item.commission_rate,
+                    voting_power: item.voting_power,
+                    stake: item.stake
                 }));
                 return apyData;
             } catch (error) {
@@ -38,7 +75,12 @@
             }
         }
 
-        let myChart; // Declare the myChart variable in the global scope
+        let apyChart;
+        let votePowerChart;
+        let stakeAmount;
+        let commisionRateChart;
+        let gasPriceChart;
+
 
         async function renderApyChart(filteredName = '') {
             const data = await fetchData();
@@ -54,13 +96,13 @@
             const apyValues = filteredData.map(item => item.apy);
 
             // Destroy the previous chart instance (if any)
-            if (myChart) {
-                myChart.destroy();
+            if (apyChart) {
+                apyChart.destroy();
             }
 
             // Create the chart using Chart.js
             const ctxApy = document.getElementById('apyChart').getContext('2d');
-            const apyChart = new Chart(ctxApy, {
+            apyChart = new Chart(ctxApy, {
                 type: 'line', // Use 'line' for a line chart
                 data: {
                     labels: epochs,
@@ -107,10 +149,13 @@
             const epochs = filteredData.map(item => item.epoch);
             const gasPrices = filteredData.map(item => item.gas_price);
 
-            console.log(data)
+            // Destroy the previous chart instance (if any)
+            if (gasPriceChart) {
+                gasPriceChart.destroy();
+            }
             // Create the gas price chart using Chart.js
             const ctxGasPrice = document.getElementById('gasPriceChart').getContext('2d');
-            const gasPriceChart = new Chart(ctxGasPrice, {
+            gasPriceChart = new Chart(ctxGasPrice, {
                 type: 'line', // Use 'bar' for a bar chart
                 data: {
                     labels: epochs,
@@ -143,18 +188,232 @@
             });
         }
 
+        async function renderCommisionRate(filteredName = '') {
+            const data = await fetchData();
+
+            // Filter the data by name if provided
+            const filteredData = filteredName ? data.filter(item => item.name.toLowerCase().includes(filteredName.toLowerCase())) : data;
+
+            // Sort the data based on the epoch
+            filteredData.sort((a, b) => a.epoch - b.epoch);
+
+            // Extract the epochs and gas price values for the chart
+            const epochs = filteredData.map(item => item.epoch);
+            const commisionRateCharts = filteredData.map(item => item.commission_rate / 100);
+
+            // Destroy the previous chart instance (if any)
+            if (commisionRateChart) {
+                commisionRateChart.destroy();
+            }
+            // Create the gas price chart using Chart.js
+            const ctxcommisionRateChart= document.getElementById('commisionRateChart').getContext('2d');
+            commisionRateChart = new Chart(ctxcommisionRateChart, {
+                type: 'line', // Use 'bar' for a bar chart
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: 'Commusion rate by Epoch',
+                        data: commisionRateCharts,
+                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Epoch'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Commision rate'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function renderCommisionRate(filteredName = '') {
+            const data = await fetchData();
+
+            // Filter the data by name if provided
+            const filteredData = filteredName ? data.filter(item => item.name.toLowerCase().includes(filteredName.toLowerCase())) : data;
+
+            // Sort the data based on the epoch
+            filteredData.sort((a, b) => a.epoch - b.epoch);
+
+            // Extract the epochs and gas price values for the chart
+            const epochs = filteredData.map(item => item.epoch);
+            const commisionRateCharts = filteredData.map(item => item.commission_rate / 100);
+
+            // Destroy the previous chart instance (if any)
+            if (commisionRateChart) {
+                commisionRateChart.destroy();
+            }
+            // Create the gas price chart using Chart.js
+            const ctxcommisionRateChart= document.getElementById('commisionRateChart').getContext('2d');
+            commisionRateChart = new Chart(ctxcommisionRateChart, {
+                type: 'line', // Use 'bar' for a bar chart
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: 'Commusion rate by Epoch',
+                        data: commisionRateCharts,
+                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Epoch'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Commision rate'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function renderStake(filteredName = '') {
+            const data = await fetchData();
+
+            // Filter the data by name if provided
+            const filteredData = filteredName ? data.filter(item => item.name.toLowerCase().includes(filteredName.toLowerCase())) : data;
+
+            // Sort the data based on the epoch
+            filteredData.sort((a, b) => a.epoch - b.epoch);
+
+            // Extract the epochs and gas price values for the chart
+            const epochs = filteredData.map(item => item.epoch);
+            const stakeCharts = filteredData.map(item => item.stake / 1000000000);
+
+            // Destroy the previous chart instance (if any)
+           if (stakeAmount) {
+                stakeAmount.destroy();
+            }
+            // Create the gas price chart using Chart.js
+            const ctxstakeAmount= document.getElementById('stakeChart').getContext('2d');
+            stakeAmount = new Chart(ctxstakeAmount, {
+                type: 'line', // Use 'bar' for a bar chart
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: 'Stake by Epoch',
+                        data: stakeCharts,
+                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Epoch'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Stake'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function renderVotePower(filteredName = '') {
+            const data = await fetchData();
+
+            // Filter the data by name if provided
+            const filteredData = filteredName ? data.filter(item => item.name.toLowerCase().includes(filteredName.toLowerCase())) : data;
+
+            // Sort the data based on the epoch
+            filteredData.sort((a, b) => a.epoch - b.epoch);
+
+            // Extract the epochs and gas price values for the chart
+            const epochs = filteredData.map(item => item.epoch);
+            const votePowerCharts = filteredData.map(item => item.voting_power);
+
+            // Destroy the previous chart instance (if any)
+            if (votePowerChart) {
+                votePowerChart.destroy();
+            }
+
+            // Create the gas price chart using Chart.js
+            const ctxvotePowerChart= document.getElementById('votePowerChart').getContext('2d');
+            votePowerChart = new Chart(ctxvotePowerChart, {
+                type: 'line', // Use 'bar' for a bar chart
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: 'Vote Power by Epoch',
+                        data: votePowerCharts,
+                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Epoch'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Vote power'
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         // Add an event listener to the filter input
         document.getElementById('filterInput').addEventListener('input', function () {
             const nameFilter = this.value;
             renderApyChart(nameFilter);
             renderGasPriceChart(nameFilter);
+            renderCommisionRate(nameFilter);
+            renderStake(nameFilter);
+            renderVotePower(nameFilter);
         });
 
         // Initial rendering with the default filter value
         const defaultFilterValue = document.getElementById('filterInput').value;
         renderApyChart(defaultFilterValue);
         renderGasPriceChart(defaultFilterValue);
+        renderCommisionRate(defaultFilterValue);
+        renderStake(defaultFilterValue);
+        renderVotePower(defaultFilterValue);
     </script>
 </body>
 </html>
