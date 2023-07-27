@@ -11,6 +11,7 @@ from mysql.connector.pooling import MySQLConnectionPool
 import csv
 from starlette.responses import Response
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 # Set up logging
 logging.basicConfig(
@@ -42,6 +43,14 @@ pool = MySQLConnectionPool(pool_name="sui", pool_size=5, **dbconfig)
 
 # Create a FastAPI app instance
 app = FastAPI()
+
+# Allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Data model for the system state
 class SystemState(BaseModel):
