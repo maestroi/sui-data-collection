@@ -106,7 +106,7 @@
         }
         // Function to handle button click event
         function handleDownloadClick() {
-            const filterValue = document.getElementById("filterInput").value;
+            const filterValue = document.getElementById("nameSelect").value;
             const networkValue = document.getElementById("networkSelect").value;
             const apiUrl = `https://api-sui.cryptosnapshotservice.com/api/csv?name=${encodeURIComponent(filterValue)}&network=${networkValue}`;
 
