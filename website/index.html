@@ -31,20 +31,27 @@
     </style>
 </head>
 <body>
-    <div class="filter-container">
-        <label for="filterInput">Filter by Name:</label>
-        <input type="text" id="filterInput" placeholder="Enter name" value="Blockdaemon">
-        <button id="downloadButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Download CSV</button>
-        <div class="relative ml-4">
-            <select id="networkSelect" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
-                <option value="mainnet">Mainnet</option>
-                <option value="testnet">Testnet</option>
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 13.293a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L10 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0z"/></svg>
-            </div>
+    <div class="container mx-auto flex items-center">
+        <label for="filterInput">Filter by vakidator:</label>
+        <div class="relative ml-4"> <!-- Adjust the width here -->
+          <select id="nameSelect" class="block appearance-none bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+            <option value="">Select a Validator</option>
+          </select>
         </div>
-    </div>
+
+        <div class="relative ml-4"> <!-- Adjust the width here -->
+          <select id="networkSelect" class="block appearance-none bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"> <!-- Adjust the width here -->
+            <option value="mainnet">Mainnet</option>
+            <option value="testnet">Testnet</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 13.293a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L10 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0z"/></svg>
+          </div>
+        </div>
+
+        <button id="downloadButton" class="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Download CSV</button>
+      </div>
+
     <div class="container mx-auto">
         <!-- First row of charts -->
         <div class="flex">
@@ -69,9 +76,7 @@
             <div class="chart-container w-1/2">
                 <canvas id="votePowerChart" style="height: 500px;"></canvas>
             </div>
-        </div>
-        <div class="flex">
-            <table id="dataTable" class="display" style="width:100%;">
+            <table id="dataTable" class="display" style="width:50%;">
                 <thead>
                     <tr>
                         <th>Epoch</th>
@@ -86,8 +91,8 @@
                 <tbody>
                     <!-- Data rows will be dynamically added here -->
                 </tbody>
+            </table>
         </div>
-
 
     </div>
     <script>
@@ -115,6 +120,52 @@
                     console.error("Error fetching CSV:", error);
                 });
         }
+        // Function to create the dropdown menu with names
+        function createNameDropdown(names) {
+            const nameSelect = document.getElementById("nameSelect");
+
+            // Clear previous options from the select element
+            nameSelect.innerHTML = "";
+
+            // Add the default "Select a name" option as the first option
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "Select a name";
+            nameSelect.appendChild(defaultOption);
+
+            // Add options for each name
+            names.forEach(name => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                nameSelect.appendChild(option);
+            });
+        }
+
+        async function updateNameDrop() {
+            try {
+                const data = await fetchData();
+                // Extract unique names from the data using a Set
+                const uniqueNames = new Set(data.map(item => item.name));
+                // Convert the Set back to an array
+                const nameList = Array.from(uniqueNames);
+
+                // Call the function to create the dropdown menu with names
+                createNameDropdown(nameList);
+
+                // Rest of your code to update the DataTable...
+
+                // Set the default value after creating the dropdown
+                const defaultName = "Blockdaemon"; // Replace this with your desired default name
+                const nameSelect = document.getElementById("nameSelect");
+                const defaultOptionElement = Array.from(nameSelect.options).find(option => option.value === defaultName);
+                if (defaultOptionElement) {
+                    nameSelect.selectedIndex = defaultOptionElement.index;
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
 
 
         async function fetchData() {
@@ -136,12 +187,6 @@
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
-        }
-
-        async function updateTable() {
-            const data = await fetchData();
-            const dataTable = $('#dataTable').DataTable();
-            dataTable.clear().rows.add(data).draw();
         }
 
         let apyChart;
@@ -466,15 +511,29 @@
             });
         }
 
-        async function updateTable() {
+        async function updateTable(filteredName = '') {
             const data = await fetchData();
-            console.log(data);
+            const filteredData = filteredName ? data.filter(item => item.name.toLowerCase().includes(filteredName.toLowerCase())) : data;
+            console.log(filteredData);
+
+            // Convert the filteredData array of objects to an array of arrays
+            const dataTableData = filteredData.map(item => [
+                item.epoch,
+                ((item.apy) * 100).toFixed(4) + "%",
+                item.name,
+                item.gas_price,
+                item.commission_rate,
+                item.voting_power,
+                (item.stake / 1000000000).toLocaleString(undefined, { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            ]);
+
             const dataTable = $('#dataTable').DataTable();
-            dataTable.clear().rows.add(data).draw();
+            dataTable.clear().rows.add(dataTableData).draw();
         }
 
+
         // Add an event listener to the filter input
-        document.getElementById('filterInput').addEventListener('input', function () {
+        document.getElementById('nameSelect').addEventListener('input', function () {
             const nameFilter = this.value;
             renderApyChart(nameFilter);
             renderGasPriceChart(nameFilter);
@@ -484,30 +543,36 @@
         });
 
         // Initial rendering with the default filter value
-        const defaultFilterValue = document.getElementById('filterInput').value;
+        updateNameDrop()
+        const defaultFilterValue = 'Blockdaemon';
         renderApyChart(defaultFilterValue);
         renderGasPriceChart(defaultFilterValue);
         renderCommisionRate(defaultFilterValue);
         renderStake(defaultFilterValue);
         renderVotePower(defaultFilterValue);
-        updateTable();
+        updateTable(defaultFilterValue);
 
         // Function to update the chart with new data
         async function updateChart() {
-            const nameFilter = document.getElementById('filterInput').value;
-            console.log(nameFilter);
+            const nameFilter = document.getElementById('nameSelect').value;
             renderApyChart(nameFilter);
             renderGasPriceChart(nameFilter);
             renderCommisionRate(nameFilter);
             renderStake(nameFilter);
             renderVotePower(nameFilter);
+            updateTable(nameFilter);
         }
 
         const networkSelect = document.getElementById("networkSelect");
         networkSelect.addEventListener("change", () => {
             // Reload the page when the network selection changes
             updateChart();
-            updateTable();
+        });
+
+        const nameSelect = document.getElementById("nameSelect");
+        nameSelect.addEventListener("change", () => {
+            // Reload the page when the network selection changes
+            updateChart();
         });
         // Attach click event to the download button
         const downloadButton = document.getElementById("downloadButton");
