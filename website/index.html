@@ -6,6 +6,10 @@
     <title>Sui stats</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+
     <style>
         .chart-container {
             max-width: 50%;
@@ -66,6 +70,25 @@
                 <canvas id="votePowerChart" style="height: 500px;"></canvas>
             </div>
         </div>
+        <div class="flex">
+            <table id="dataTable" class="display" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Epoch</th>
+                        <th>APY</th>
+                        <th>Name</th>
+                        <th>Gas Price</th>
+                        <th>Commission Rate</th>
+                        <th>Voting Power</th>
+                        <th>Stake</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data rows will be dynamically added here -->
+                </tbody>
+        </div>
+
+
     </div>
     <script>
         // Function to trigger the CSV download
@@ -93,6 +116,7 @@
                 });
         }
 
+
         async function fetchData() {
             try {
                 const networkValue = document.getElementById("networkSelect").value;
@@ -112,6 +136,12 @@
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
+        }
+
+        async function updateTable() {
+            const data = await fetchData();
+            const dataTable = $('#dataTable').DataTable();
+            dataTable.clear().rows.add(data).draw();
         }
 
         let apyChart;
@@ -436,6 +466,13 @@
             });
         }
 
+        async function updateTable() {
+            const data = await fetchData();
+            console.log(data);
+            const dataTable = $('#dataTable').DataTable();
+            dataTable.clear().rows.add(data).draw();
+        }
+
         // Add an event listener to the filter input
         document.getElementById('filterInput').addEventListener('input', function () {
             const nameFilter = this.value;
@@ -453,6 +490,7 @@
         renderCommisionRate(defaultFilterValue);
         renderStake(defaultFilterValue);
         renderVotePower(defaultFilterValue);
+        updateTable();
 
         // Function to update the chart with new data
         async function updateChart() {
@@ -469,6 +507,7 @@
         networkSelect.addEventListener("change", () => {
             // Reload the page when the network selection changes
             updateChart();
+            updateTable();
         });
         // Attach click event to the download button
         const downloadButton = document.getElementById("downloadButton");
