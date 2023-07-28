@@ -97,11 +97,11 @@
     </div>
     <script>
         // Function to trigger the CSV download
-        function downloadCSV(url) {
+        function downloadCSV(url,filterValue) {
             const link = document.createElement("a");
             link.href = url;
             link.target = "_blank";
-            link.download = "data.csv";
+            link.download = `${filterValue}.csv`;
             link.click();
         }
         // Function to handle button click event
@@ -114,7 +114,7 @@
                 .then(response => response.blob())
                 .then(blob => {
                     const url = URL.createObjectURL(blob);
-                    downloadCSV(url);
+                    downloadCSV(url, filterValue);
                 })
                 .catch(error => {
                     console.error("Error fetching CSV:", error);
