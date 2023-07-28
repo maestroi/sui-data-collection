@@ -165,7 +165,7 @@ def check_and_run_job(api_url, network):
     try:
         mydb = pool.get_connection()
         cursor = mydb.cursor()
-        cursor.execute("SELECT epoch FROM system_state WHERE network = %s ORDER BY epoch DESC LIMIT 1", (network,))
+        cursor.execute("SELECT MAX(epoch) FROM system_state WHERE network = %s and epoch > 100;", (network,))
         result = cursor.fetchone()
 
         logging.info("Last epoch in the database: %s", result[0])
