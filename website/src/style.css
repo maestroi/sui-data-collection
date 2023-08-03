@@ -44,6 +44,19 @@ h1 {
   line-height: 1.1;
 }
 
+th {
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+td {
+  color: #fff;
+}
+
+.bh-mr-2 {
+  color: #fff;
+}
+
 select {
   border-radius: 8px;
   border: 1px solid transparent;

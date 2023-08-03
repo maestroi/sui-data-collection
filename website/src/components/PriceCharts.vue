@@ -26,6 +26,10 @@
         <canvas id="epoch-apy-chart" ref="apyChart"></canvas>
       </div>
       <div class="chart">
+        <h2>Stake</h2>
+        <canvas id="epoch-stake-chart" ref="stakeChart"></canvas>
+      </div>
+      <div class="chart">
         <h2>Gas Price</h2>
         <canvas id="epoch-gas-price-chart" ref="gasPriceChart"></canvas>
       </div>
@@ -34,45 +38,31 @@
         <canvas id="epoch-commission-rate-chart" ref="commissionRateChart"></canvas>
       </div>
       <div class="chart">
-        <h2>Stake</h2>
-        <canvas id="epoch-stake-chart" ref="stakeChart"></canvas>
-      </div>
-      <div class="chart">
         <h2>Voting Power</h2>
         <canvas id="epoch-voting-power-chart" ref="votingPowerChart"></canvas>
       </div>
-      <div class="chart">
-        <table>
-      <thead>
-        <tr>
-          <th>Epoch</th>
-          <th>Gas Price</th>
-          <th>APY</th>
-          <th>Commission Rate</th>
-          <th>Voting Power</th>
-          <th>Stake Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in tableDataRef" :key="row.epoch">
-          <td>{{ row.epoch }}</td>
-          <td>{{ row.gasPrice }}</td>
-          <td>{{ row.apy.toFixed(5) }}</td>
-          <td>{{ row.commissionRate }}</td>
-          <td>{{ row.votingPower }}</td>
-          <td>{{ row.stakeAmount.toFixed(2) }}</td>
-        </tr>
-      </tbody>
-    </table>
-      </div>
     </div>
+    <div class="table-div">
+        <vue3-datatable
+            :rows="tableDataRef"
+            :columns="tableColumns"
+            :sortable="true"
+            :sortColumn="params.sort_column"
+            :sortDirection="params.sort_direction"
+            :showNumbersCount="3"
+            :pageSize="params.pagesize"
+            skin="bh-table-compact"
+            class="alt-pagination"> </vue3-datatable>
+      </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, watch, computed  } from 'vue';
+import { onMounted, ref, watch, reactive } from 'vue';
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
+import Vue3Datatable from "@bhplugin/vue3-datatable";
+import "@bhplugin/vue3-datatable/dist/style.css";
 
 // Register the necessary plugins
 Chart.register(...registerables);
@@ -90,6 +80,24 @@ let data = [];
 const providers = ref([]);
 const networks = ['mainnet', 'testnet'];
 const baseUrl = 'https://api.sui-data.com/api';
+
+
+const params = reactive({
+        current_page: 1,
+        pagesize: 20,
+        sort_column: 'epoch',
+        sort_direction: 'desc',
+    });
+
+const tableColumns = ref([
+      { field: "epoch", title: "Epoch", isUnique: true},
+      { field: "gasPrice", title: "Gas Price" },
+      { field: "apy", title: "APY" },
+      { field: "commissionRate", title: "Commission Rate" },
+      { field: "votingPower", title: "Voting Power" },
+      { field: "stakeAmount", title: "Stake Amount" },
+    ]);
+
 
 const fetchData = async () => {
   try {
@@ -111,10 +119,10 @@ const updateTable = () => {
   const tableData = filteredData.map((item) => ({
     epoch: item.epoch,
     gasPrice: item.gas_price,
-    apy: item.apy,
-    commissionRate: item.commission_rate / 100,
+    apy: (item.apy * 100).toFixed(4) + '%',
+    commissionRate: item.commission_rate / 100 + '%',
     votingPower: item.voting_power,
-    stakeAmount: item.stake / 1000000000
+    stakeAmount: (item.stake / 1000000000).toLocaleString('en-US', {minimumFractionDigits: 2,maximumFractionDigits: 2})
   }));
 
   // Assuming you have a reactive reference to store the table data
@@ -265,9 +273,29 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
+.table-div {
+  margin: auto;
+  margin-top: 2%;
+}
+
 .tables-c {
   flex: 1 1 100%; /* Two charts per row */
   max-width: 100%; /* Two charts per row */
+}
+
+/* alt-pagination */
+.alt-pagination .bh-pagination .bh-page-item {
+    @apply !w-max min-w-[32px] !rounded;
+}
+/* next-prev-pagination */
+.next-prev-pagination .bh-pagination .bh-page-item {
+    @apply !w-max min-w-[100px] !rounded;
+}
+.next-prev-pagination .bh-pagination > div:first-child {
+    @apply flex-col font-semibold;
+}
+.next-prev-pagination .bh-pagination .bh-pagination-number {
+    @apply mx-auto gap-3;
 }
 
 /* Media query for smaller screens, one chart per row */

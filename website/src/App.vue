@@ -14,7 +14,7 @@ import PriceCharts from './components/PriceCharts.vue';
 import Header from './components/Header.vue';
 import Footer from './components/Footer.vue';
 
-const version = ref('0.0.1');
+const version = ref('0.0.2');
 </script>
 <style>
 
