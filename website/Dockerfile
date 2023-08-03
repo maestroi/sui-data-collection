@@ -1,11 +1,18 @@
-# Use the official Nginx base image
+# Stage 1: Build the Vite project
+FROM node:18 AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Serve the built project with Nginx
 FROM nginx:alpine
 
-# Copy the HTML file to the Nginx default public directory
-COPY index.html /usr/share/nginx/html/
+COPY --from=build /app/dist/ /usr/share/nginx/html
 
-# Expose port 80 to allow access to the Nginx server
 EXPOSE 80
 
-# Start the Nginx server when the container runs
 CMD ["nginx", "-g", "daemon off;"]
