@@ -74,6 +74,7 @@ class SystemState(BaseModel):
     commission_rate: str
     stake: str
     apy: float
+    rate_change: float
 
 # GET endpoint to retrieve system states filtered by network
 @app.get("/api/data")
