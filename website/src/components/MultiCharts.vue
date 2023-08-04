@@ -151,13 +151,19 @@ const downloadCSV = async () => {
     const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.download = `system_states.csv`; // You might want to rename the file since there might be multiple providers
+
+    // Create a filename based on the selected providers and network
+    const providers = selectedProviders.value.join('_');
+    const networkSuffix = selectedNetwork.value === 'mainnet' ? '-mainnet' : '-testnet';
+    link.download = `${providers}${networkSuffix}.csv`;
+
     link.click();
     window.URL.revokeObjectURL(link.href);
   } catch (error) {
     console.error('Failed to download CSV:', error);
   }
 };
+
 
 const getUniqueProviders = () => {
   const uniqueProviders = Array.from(new Set(data.map((item) => item.name)));
