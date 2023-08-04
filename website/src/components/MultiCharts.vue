@@ -97,6 +97,7 @@ const tableColumns = ref([
       { field: "validatorName", title: "Name" },
       { field: "gasPrice", title: "Gas Price" },
       { field: "apy", title: "APY" },
+      { field: "changeRate", title: "APY Change"},
       { field: "commissionRate", title: "Commission Rate" },
       { field: "votingPower", title: "Voting Power" },
       { field: "stakeAmount", title: "Stake Amount" },
@@ -128,7 +129,7 @@ const updateTable = () => {
     validatorName: item.name,
     gasPrice: item.gas_price,
     apy: (item.apy * 100).toFixed(4) + '%',
-    rateChange: item.rate_change,
+    changeRate: (item.rate_change * 100).toFixed(4) + '%',
     commissionRate: item.commission_rate / 100 + '%',
     votingPower: item.voting_power,
     stakeAmount: (item.stake / 1000000000).toLocaleString('en-US', {
