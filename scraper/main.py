@@ -149,12 +149,40 @@ def create_database(network):
                             gas_price TEXT,
                             commission_rate TEXT,
                             stake TEXT,
-                            apy DOUBLE
+                            apy DOUBLE,
+                            rate_change DOUBLE
                         )''')
 
         cursor.close()
         mydb.close()
         logging.info("Database created successfully!")
+    except mysql.connector.Error as err:
+        logging.error(f"Error updating row: {err}")
+
+def update_rate_change(network, epoch):
+    try:
+        mydb = pool.get_connection()
+        cursor = mydb.cursor()
+
+        # Fetch previous epoch data
+        cursor.execute("SELECT epoch, sui_address, apy FROM system_state WHERE network = %s AND epoch = %s", (network, str(int(epoch) - 1)))
+        previous_data = {row[1]: row[2] for row in cursor.fetchall()}
+
+        # Fetch current epoch data
+        cursor.execute("SELECT sui_address, apy FROM system_state WHERE network = %s AND epoch = %s", (network, epoch))
+        for row in cursor.fetchall():
+            address, apy = row
+            prev_apy = previous_data.get(address, apy)
+            rate_change = apy - prev_apy # Calculates the change in rate, can be positive or negative
+
+            # Update the rate_change
+            cursor.execute("UPDATE system_state SET rate_change = %s WHERE sui_address = %s AND network = %s AND epoch = %s",
+                           (rate_change, address, network, epoch))
+            mydb.commit()
+
+        cursor.close()
+        mydb.close()
+        logging.info("Rate change updated in the database successfully!")
     except mysql.connector.Error as err:
         logging.error(f"Error updating row: {err}")
 
@@ -235,7 +263,8 @@ def main():
     schedule.every(10).minutes.do(print_time_left, api_url=api_url)
 
     # Schedule the job to run every 60 minutes
-    schedule.every(60).minutes.do(check_and_run_job, api_url=api_url, network=network)
+    schedule.every(5).minutes.do(update_rate_change, network=network, epoch=request_epoch(api_url))
+
 
     # Run the scheduled tasks
     while True:
