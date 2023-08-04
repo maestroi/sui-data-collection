@@ -43,6 +43,10 @@
         <h2>Voting Power</h2>
         <canvas id="epoch-voting-power-chart" ref="votingPowerChart"></canvas>
       </div>
+      <div class="chart">
+        <h2>APY Change rate</h2>
+        <canvas id="epoch-rate-change-chart" ref="changeRateChart"></canvas>
+      </div>
     </div>
     <div class="table-div">
         <vue3-datatable
@@ -77,6 +81,7 @@ const gasPriceChart = ref(null);
 const apyChart = ref(null);
 const commissionRateChart = ref(null);
 const votingPowerChart = ref(null);
+const changeRateChart = ref(null);
 const tableDataRef = ref([]);
 
 let data = [];
@@ -251,6 +256,7 @@ const updateChartData = () => {
     commissionRates: [],
     votingPowers: [],
     stakeAmounts: [],
+    rateChanges: [],
   };
 
   // Create datasets for each selected provider
@@ -268,6 +274,8 @@ const updateChartData = () => {
     const stakeAmounts = filteredData.map((item) => item.stake / 1000000000);
     const rateChange = filteredData.map((item) => item.rate_change);
 
+    console.log(rateChange)
+
     const createDataset = (label, values) => ({
       label: selectedProvider,
       data: values,
@@ -282,6 +290,7 @@ const updateChartData = () => {
     allData.commissionRates.push(createDataset('Commission Rate', commissionRates));
     allData.votingPowers.push(createDataset('Voting Power', votingPowers));
     allData.stakeAmounts.push(createDataset('Stake Amount', stakeAmounts));
+    allData.rateChanges.push(createDataset('Change Rate APY', rateChange));
   });
 
   // Update the charts with the new datasets
@@ -290,6 +299,7 @@ const updateChartData = () => {
   initializeAndOrUpdateChart('epoch-commission-rate-chart', epochs, allData.commissionRates);
   initializeAndOrUpdateChart('epoch-voting-power-chart', epochs, allData.votingPowers);
   initializeAndOrUpdateChart('epoch-stake-chart', epochs, allData.stakeAmounts);
+  initializeAndOrUpdateChart('epoch-rate-change-chart', epochs, allData.rateChanges);
 };
 
 // Helper function to generate a random color
