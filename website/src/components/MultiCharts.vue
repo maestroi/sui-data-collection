@@ -3,11 +3,13 @@
     <div class="selections-container">
       <div class="selection">
         <label for="provider">Validator</label>
-        <select v-model="selectedProviders" multiple @change="updateChartData">
-          <option v-for="provider in providers" :key="provider" :value="provider">
-            {{ provider }}
-          </option>
-        </select>
+        <v-select
+          v-model="selectedProviders"
+          :options="providers"
+          multiple
+          class="style-chooser"
+          @input="updateChartData"
+        ></v-select>
       </div>
       <div class="selection">
         <select v-model="selectedNetwork" @change="updateChartData">
@@ -62,6 +64,7 @@ import { onMounted, ref, watch, reactive } from 'vue';
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
 import Vue3Datatable from "@bhplugin/vue3-datatable";
+import vSelect from 'vue-select'
 import "@bhplugin/vue3-datatable/dist/style.css";
 
 // Register the necessary plugins
@@ -119,8 +122,6 @@ const updateTable = () => {
     selectedNetwork.value.includes(item.network)
   );
 
-
-  console.log(filteredData)
   // Extract the required data
   const tableData = filteredData.map((item) => ({
     epoch: item.epoch,
@@ -305,6 +306,8 @@ onMounted(() => {
 </script>
 
 <style>
+@import "vue-select/dist/vue-select.css";
+
 .selections-container {
   display: flex;
   flex-wrap: wrap;
@@ -345,6 +348,21 @@ onMounted(() => {
 .tables-c {
   flex: 1 1 100%; /* Two charts per row */
   max-width: 100%; /* Two charts per row */
+}
+
+.style-chooser .vs__search::placeholder,
+.style-chooser .vs__dropdown-toggle,
+.style-chooser .vs__dropdown-menu {
+  background: #333;
+  border: none;
+  color: #fff;
+  text-transform: lowercase;
+  font-variant: small-caps;
+}
+
+.style-chooser .vs__clear,
+.style-chooser .vs__open-indicator {
+  fill: #fff;
 }
 
 /* alt-pagination */
