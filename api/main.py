@@ -105,7 +105,8 @@ async def get_system_states(network: str = 'mainnet', epoch: int = None):
                 "gas_price": result[15],
                 "commission_rate": result[16],
                 "stake": result[17],
-                "apy": result[18]
+                "apy": result[18],
+                "rate_change": result[19]
             }
             system_state = SystemState(**system_state_dict)
             system_states.append(system_state)
@@ -138,7 +139,7 @@ async def download_system_states(network: str = 'mainnet', epoch: int = None, na
             "epoch", "network", "sui_address", "protocol_pubkey_bytes", "network_pubkey_bytes",
             "worker_pubkey_bytes", "name", "description", "image_url", "project_url", "net_address",
             "p2p_address", "primary_address", "worker_address", "voting_power", "gas_price",
-            "commission_rate", "stake", "apy"
+            "commission_rate", "stake", "apy", "rate_change"
         ]
 
         # Create a list to store rows as dictionaries
@@ -163,7 +164,8 @@ async def download_system_states(network: str = 'mainnet', epoch: int = None, na
                 "gas_price": result[15],
                 "commission_rate": result[16],
                 "stake": result[17],
-                "apy": result[18]
+                "apy": result[18],
+                "rate_change": result[19]
             }
             data.append(system_state_dict)
 

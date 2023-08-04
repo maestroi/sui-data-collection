@@ -128,6 +128,7 @@ const updateTable = () => {
     validatorName: item.name,
     gasPrice: item.gas_price,
     apy: (item.apy * 100).toFixed(4) + '%',
+    rateChange: item.rate_change,
     commissionRate: item.commission_rate / 100 + '%',
     votingPower: item.voting_power,
     stakeAmount: (item.stake / 1000000000).toLocaleString('en-US', {
@@ -264,6 +265,7 @@ const updateChartData = () => {
     const commissionRates = filteredData.map((item) => item.commission_rate / 100);
     const votingPowers = filteredData.map((item) => item.voting_power);
     const stakeAmounts = filteredData.map((item) => item.stake / 1000000000);
+    const rateChange = filteredData.map((item) => item.rate_change);
 
     const createDataset = (label, values) => ({
       label: selectedProvider,
