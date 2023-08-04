@@ -259,7 +259,7 @@ const updateChartData = () => {
       label: selectedProvider,
       data: values,
       backgroundColor: 'rgba(75, 192, 192, 0.2)',
-      borderColor: generateRandomColor(),
+      borderColor: generateColorFromString(selectedProvider),
       borderWidth: 1,
       fill: false,
     });
@@ -280,11 +280,23 @@ const updateChartData = () => {
 };
 
 // Helper function to generate a random color
-const generateRandomColor = () => {
-  const letters = '0123456789ABCDEF';
+// Function to generate a color based on the string (provider name)
+const generateColorFromString = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
   let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
+  for (let i = 0; i < 3; i++) {
+    let value = (hash >> (i * 8)) & 0xFF;
+
+    // Ensure that the value is above a certain threshold for brightness
+    // You can adjust the minimum value to your liking
+    const minValue = 150;
+    value = Math.max(value, minValue);
+
+    color += ('00' + value.toString(16)).substr(-2);
   }
   return color;
 };
