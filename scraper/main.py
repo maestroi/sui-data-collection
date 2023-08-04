@@ -159,32 +159,39 @@ def create_database(network):
     except mysql.connector.Error as err:
         logging.error(f"Error updating row: {err}")
 
-def update_rate_change(network, epoch):
+def update_rate_change(network):
     try:
         mydb = pool.get_connection()
         cursor = mydb.cursor()
 
-        # Fetch previous epoch data
-        cursor.execute("SELECT epoch, sui_address, apy FROM system_state WHERE network = %s AND epoch = %s", (network, str(int(epoch) - 1)))
-        previous_data = {row[1]: row[2] for row in cursor.fetchall()}
+        # Get distinct epochs with NULL rate_change for the specified network
+        cursor.execute("SELECT DISTINCT epoch FROM system_state WHERE network = %s AND rate_change IS NULL", (network,))
+        epochs_to_update = [row[0] for row in cursor.fetchall()]
 
-        # Fetch current epoch data
-        cursor.execute("SELECT sui_address, apy FROM system_state WHERE network = %s AND epoch = %s", (network, epoch))
-        for row in cursor.fetchall():
-            address, apy = row
-            prev_apy = previous_data.get(address, apy)
-            rate_change = apy - prev_apy # Calculates the change in rate, can be positive or negative
+        for epoch in epochs_to_update:
+            # Fetch previous epoch data
+            cursor.execute("SELECT epoch, sui_address, apy FROM system_state WHERE network = %s AND epoch = %s", (network, str(int(epoch) - 1)))
+            previous_data = {row[1]: row[2] for row in cursor.fetchall()}
 
-            # Update the rate_change
-            cursor.execute("UPDATE system_state SET rate_change = %s WHERE sui_address = %s AND network = %s AND epoch = %s",
-                           (rate_change, address, network, epoch))
-            mydb.commit()
+            # Fetch current epoch data
+            cursor.execute("SELECT sui_address, apy FROM system_state WHERE network = %s AND epoch = %s", (network, epoch))
+            for row in cursor.fetchall():
+                address, apy = row
+                prev_apy = previous_data.get(address, apy)
+                rate_change = apy - prev_apy # Calculates the change in rate, can be positive or negative
+
+                # Update the rate_change
+                cursor.execute("UPDATE system_state SET rate_change = %s WHERE sui_address = %s AND network = %s AND epoch = %s",
+                               (rate_change, address, network, epoch))
+                mydb.commit()
+
+            logging.info(f"Rate change for epoch {epoch} updated in the database successfully!")
 
         cursor.close()
         mydb.close()
-        logging.info("Rate change updated in the database successfully!")
     except mysql.connector.Error as err:
         logging.error(f"Error updating row: {err}")
+
 
 def check_and_run_job(api_url, network):
     current_epoch = request_epoch(api_url)
@@ -263,7 +270,7 @@ def main():
     schedule.every(10).minutes.do(print_time_left, api_url=api_url)
 
     # Schedule the job to run every 60 minutes
-    schedule.every(5).minutes.do(update_rate_change, network=network, epoch=request_epoch(api_url))
+    schedule.every(5).minutes.do(update_rate_change, network=network)
 
 
     # Run the scheduled tasks
