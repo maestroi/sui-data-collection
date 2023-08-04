@@ -247,7 +247,7 @@ const updateChartData = () => {
     const stakeAmounts = filteredData.map((item) => item.stake / 1000000000);
 
     const createDataset = (label, values) => ({
-      label: selectedProvider + ' ' + label,
+      label: selectedProvider,
       data: values,
       backgroundColor: 'rgba(75, 192, 192, 0.2)',
       borderColor: generateRandomColor(),
