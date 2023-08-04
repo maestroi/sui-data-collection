@@ -44,7 +44,7 @@
         <canvas id="epoch-voting-power-chart" ref="votingPowerChart"></canvas>
       </div>
       <div class="chart">
-        <h2>APY Change rate</h2>
+        <h2>APY Change Previous epoch</h2>
         <canvas id="epoch-rate-change-chart" ref="changeRateChart"></canvas>
       </div>
     </div>
