@@ -2,7 +2,8 @@
   <div class="app">
     <Header />
     <div class="content">
-      <PriceCharts />
+      <!-- <PriceCharts /> -->
+      <MultiCharts />
     </div>
     <Footer :version="version" />
   </div>
@@ -11,6 +12,7 @@
 <script setup>
 import { ref } from 'vue';
 import PriceCharts from './components/PriceCharts.vue';
+import MultiCharts from './components/MultiCharts.vue';
 import Header from './components/Header.vue';
 import Footer from './components/Footer.vue';
 
