@@ -276,7 +276,7 @@ const updateChartData = () => {
     const createDataset = (label, values) => ({
       label: selectedProvider,
       data: values,
-      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      backgroundColor: generateColorFromString(selectedProvider),
       borderColor: generateColorFromString(selectedProvider),
       borderWidth: 1,
       fill: false,
