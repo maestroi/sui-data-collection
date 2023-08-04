@@ -266,15 +266,12 @@ const updateChartData = () => {
     const filteredData = data.filter((item) => item.name === selectedProvider && item.network === selectedNetwork.value);
 
     const epochs = filteredData.map((item) => item.epoch);
-
     const gasPrices = filteredData.map((item) => item.gas_price);
     const apys = filteredData.map((item) => item.apy);
     const commissionRates = filteredData.map((item) => item.commission_rate / 100);
     const votingPowers = filteredData.map((item) => item.voting_power);
     const stakeAmounts = filteredData.map((item) => item.stake / 1000000000);
     const rateChange = filteredData.map((item) => item.rate_change);
-
-    console.log(rateChange)
 
     const createDataset = (label, values) => ({
       label: selectedProvider,
