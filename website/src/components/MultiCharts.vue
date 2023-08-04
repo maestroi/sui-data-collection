@@ -142,12 +142,16 @@ const updateTable = () => {
 
 const downloadCSV = async () => {
   try {
-    const url = `${baseUrl}/csv?name=${selectedProviders.value}&network=${selectedNetwork.value}`;
+    // Build the names query parameter
+    const namesParam = selectedProviders.value.map(name => `names=${encodeURIComponent(name)}`).join('&');
+
+    const url = `${baseUrl}/csv?${namesParam}&network=${encodeURIComponent(selectedNetwork.value)}`;
+
     const response = await axios.get(url, { responseType: 'blob' });
     const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.download = `${selectedProviders.value}.csv`;
+    link.download = `system_states.csv`; // You might want to rename the file since there might be multiple providers
     link.click();
     window.URL.revokeObjectURL(link.href);
   } catch (error) {

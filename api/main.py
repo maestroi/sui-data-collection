@@ -12,6 +12,7 @@ import csv
 from starlette.responses import Response
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Query
 
 # Set up logging
 logging.basicConfig(
@@ -118,13 +119,15 @@ async def get_system_states(network: str = 'mainnet', epoch: int = None):
 
 
 @app.get("/api/csv")
-async def download_system_states(network: str = 'mainnet', epoch: int = None, name: str = None):
+async def download_system_states(network: str = 'mainnet', epoch: int = None, names: List[str] = Query(None)):
     mydb = pool.get_connection()
     cursor = mydb.cursor()
     try:
         query = f"SELECT * FROM system_state WHERE network = '{network}'"
-        if name:
-            query += f" AND name = '{name}'"
+        if names:
+            # Escape single quotes and join the names with commas
+            escaped_names = "','".join(map(lambda x: x.replace("'", "''"), names))
+            query += f" AND name IN ('{escaped_names}')"
         query += ";"
 
         cursor.execute(query)
