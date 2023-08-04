@@ -114,8 +114,13 @@ const fetchData = async () => {
 
 const updateTable = () => {
   // Filter data based on selected provider and network
-  const filteredData = data.filter((item) => item.name === selectedProviders.value && item.network === selectedNetwork.value);
+  const filteredData = data.filter((item) =>
+    selectedProviders.value.includes(item.name) &&
+    selectedNetwork.value.includes(item.network)
+  );
 
+
+  console.log(filteredData)
   // Extract the required data
   const tableData = filteredData.map((item) => ({
     epoch: item.epoch,
@@ -124,7 +129,10 @@ const updateTable = () => {
     apy: (item.apy * 100).toFixed(4) + '%',
     commissionRate: item.commission_rate / 100 + '%',
     votingPower: item.voting_power,
-    stakeAmount: (item.stake / 1000000000).toLocaleString('en-US', {minimumFractionDigits: 2,maximumFractionDigits: 2})
+    stakeAmount: (item.stake / 1000000000).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }),
   }));
 
   // Assuming you have a reactive reference to store the table data
@@ -282,6 +290,7 @@ const generateRandomColor = () => {
 
 watch(selectedProviders, () => {
   updateChartData();
+  updateTable();
 });
 
 watch(selectedNetwork, () => {
