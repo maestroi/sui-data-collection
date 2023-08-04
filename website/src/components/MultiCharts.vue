@@ -93,7 +93,7 @@ const params = reactive({
     });
 
 const tableColumns = ref([
-      { field: "epoch", title: "Epoch", isUnique: true},
+      { field: "epoch", title: "Epoch" },
       { field: "validatorName", title: "Name" },
       { field: "gasPrice", title: "Gas Price" },
       { field: "apy", title: "APY" },
@@ -291,26 +291,22 @@ const updateChartData = () => {
 
 // Helper function to generate a random color
 // Function to generate a color based on the string (provider name)
+const golden_ratio_conjugate = 0.618033988749895;
+
 const generateColorFromString = (str) => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  let color = '#';
-  for (let i = 0; i < 3; i++) {
-    let value = (hash >> (i * 8)) & 0xFF;
+  // Convert hash to a number between 0 and 1
+  const normalizedHash = (hash & 0xff) / 255.0;
 
-    // Ensure that the value is above a certain threshold for brightness
-    // You can adjust the minimum value to your liking
-    const minValue = 150;
-    value = Math.max(value, minValue);
+  // Use the golden ratio to spread out the colors
+  const hue = Math.floor((normalizedHash + golden_ratio_conjugate) * 360) % 360;
 
-    color += ('00' + value.toString(16)).substr(-2);
-  }
-  return color;
+  return `hsl(${hue}, 80%, 60%)`;
 };
-
 watch(selectedProviders, () => {
   updateChartData();
   updateTable();
