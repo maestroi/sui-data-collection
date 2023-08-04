@@ -150,7 +150,7 @@ def create_database(network):
                             commission_rate TEXT,
                             stake TEXT,
                             apy DOUBLE,
-                            rate_change DOUBLE
+                            rate_change DECIMAL(18, 15) NULL
                         )''')
 
         cursor.close()
@@ -179,6 +179,8 @@ def update_rate_change(network):
                 address, apy = row
                 prev_apy = previous_data.get(address, apy)
                 rate_change = apy - prev_apy # Calculates the change in rate, can be positive or negative
+
+                logging.info(f"Rate change for epoch {epoch} for validator {address} is {rate_change}")
 
                 # Update the rate_change
                 cursor.execute("UPDATE system_state SET rate_change = %s WHERE sui_address = %s AND network = %s AND epoch = %s",
