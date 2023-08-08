@@ -76,6 +76,13 @@ class SystemState(BaseModel):
     apy: float
     rate_change: float
 
+# Model for exchange rate
+class ExchangeRate(BaseModel):
+    suiAddress: str
+    pool_id: str
+    active: bool
+    rates: List[dict]
+
 # GET endpoint to retrieve system states filtered by network
 @app.get("/api/data")
 async def get_system_states(network: str = 'mainnet', epoch: int = None):
@@ -119,6 +126,43 @@ async def get_system_states(network: str = 'mainnet', epoch: int = None):
         cursor.close()
         mydb.close()
 
+
+@app.get("/token-exchange-rate/{sui_address}/{network}", response_model=ExchangeRate)
+async def get_token_exchange_rate(sui_address: str, network: str):
+    connection = pool.get_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        query = f"SELECT * FROM validators_data WHERE suiAddress = '{sui_address}' AND network = '{network}'"
+        cursor.execute(query)
+
+        records = cursor.fetchall()
+
+        if records is None or len(records) == 0:
+            raise HTTPException(status_code=404, detail="Exchange rate not found")
+
+        rate_list = []
+        for record in records:
+            rate_dict = {
+                "epoch": record["epoch"],
+                "PoolTokenExchangeRate": [record["pool_token_amount"], record["sui_amount"]]
+            }
+            rate_list.append(rate_dict)
+
+        return {
+            "suiAddress": sui_address,
+            "pool_id": records[0]["pool_id"],
+            "active": records[0]["active"],
+            "rates": rate_list
+        }
+
+    except mysql.connector.Error as err:
+        logging.error(f"Error: {err}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    finally:
+        cursor.close()
+        connection.close()
 
 @app.get("/api/csv")
 async def download_system_states(network: str = 'mainnet', epoch: int = None, names: List[str] = Query(None)):

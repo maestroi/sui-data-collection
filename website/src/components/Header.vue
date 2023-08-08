@@ -1,7 +1,7 @@
 <template>
     <header class="header">
       <div class="header-text">
-        Sui Data
+        Sui APY Data
       </div>
       <!-- Add other header elements here -->
     </header>
@@ -18,7 +18,7 @@
   /* Add your custom styles for the header and logo here */
 
   .header-text {
-    text-align: center;
+    text-align: Left;
     font-size: 20px;
   }
 
