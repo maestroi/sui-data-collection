@@ -145,7 +145,10 @@ async def get_token_exchange_rate(sui_address: str, network: str):
         for record in records:
             rate_dict = {
                 "epoch": record["epoch"],
-                "PoolTokenExchangeRate": [record["pool_token_amount"], record["sui_amount"]]
+                "PoolTokenExchangeRate": {
+                    "sui_amount": record["sui_amount"],
+                    "pool_token_amount": record["pool_token_amount"]
+                }
             }
             rate_list.append(rate_dict)
 
