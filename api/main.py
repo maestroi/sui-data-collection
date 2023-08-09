@@ -135,7 +135,7 @@ def read_root():
 
 router = APIRouter()
 # GET endpoint to retrieve system states filtered by network
-@router.get(f"/historydata/")
+@router.get(f"/historydata")
 async def get_system_states(network: str = 'mainnet'):
     mydb = pool.get_connection()
     cursor = mydb.cursor()
@@ -299,5 +299,4 @@ app.include_router(router, prefix="/api/v1")
 
 # Run the FastAPI application
 if __name__ == "__main__":
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
