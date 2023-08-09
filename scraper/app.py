@@ -133,7 +133,7 @@ def get_dynamic_field_object(url, exchange_rates_id, epoch):
         return None
 
 if __name__ == "__main__":
-    with open('config_mainnet.json') as f:
+    with open('config_testnet.json') as f:
         config = json.load(f)
 
     db_conn = init_db_connection(config)

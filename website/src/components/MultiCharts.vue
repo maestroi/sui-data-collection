@@ -87,7 +87,7 @@ const tableDataRef = ref([]);
 let data = [];
 const providers = ref([]);
 const networks = ['mainnet', 'testnet'];
-const baseUrl = 'https://api.sui-data.com/api';
+const baseUrl = 'https://api.sui-data.com/api/v1';
 
 
 const params = reactive({
@@ -111,7 +111,7 @@ const tableColumns = ref([
 
 const fetchData = async () => {
   try {
-    const response = await axios.get(`${baseUrl}/data?network=${selectedNetwork.value}`);
+    const response = await axios.get(`${baseUrl}/historydata?network=${selectedNetwork.value}`);
     data = response.data;
     providers.value = getUniqueProviders();
     updateChartData();
@@ -152,7 +152,7 @@ const downloadCSV = async () => {
     // Build the names query parameter
     const namesParam = selectedProviders.value.map(name => `names=${encodeURIComponent(name)}`).join('&');
 
-    const url = `${baseUrl}/csv?${namesParam}&network=${encodeURIComponent(selectedNetwork.value)}`;
+    const url = `${baseUrl}/historydata/csv?${namesParam}&network=${encodeURIComponent(selectedNetwork.value)}`;
 
     const response = await axios.get(url, { responseType: 'blob' });
     const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });

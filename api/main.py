@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List
-import logging
+# Standard library imports
 import json
-import uvicorn
+import logging
 import os
+
+# Third-party imports
+from fastapi import FastAPI, APIRouter, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from starlette.responses import RedirectResponse
 import mysql.connector
 from mysql.connector.pooling import MySQLConnectionPool
-import csv
-from starlette.responses import Response
-from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Query
+import uvicorn
+from typing import List
 
 # Set up logging
 logging.basicConfig(
@@ -32,6 +33,7 @@ mysql_database = config['mysql_database']
 mysql_host = config['mysql_host']
 api_url = config['api_url']
 network = config['network']
+api_route = '/api/v1/'
 
 # Create a connection pool outside of the function
 dbconfig = {
@@ -43,7 +45,7 @@ dbconfig = {
 pool = MySQLConnectionPool(pool_name="sui", pool_size=5, **dbconfig)
 
 # Create a FastAPI app instance
-app = FastAPI()
+app = FastAPI(docs_url="/docs")
 
 # Allow all origins
 app.add_middleware(
@@ -83,9 +85,58 @@ class ExchangeRate(BaseModel):
     active: bool
     rates: List[dict]
 
+def calculate_apy(rate_e, rate_e_1):
+    er_e = rate_e["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e["PoolTokenExchangeRate"]["sui_amount"]
+    er_e_1 = rate_e_1["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e_1["PoolTokenExchangeRate"]["sui_amount"]
+    return (er_e_1 / er_e) ** 365 - 1.0
+
+def get_apy_data(sui_address: str, network: str, table_name: str = "validators_data"):
+    connection = pool.get_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        query = f"SELECT * FROM {table_name} WHERE suiAddress = %s AND network = %s"
+        cursor.execute(query, (sui_address, network))
+        records = cursor.fetchall()
+
+        if records is None or len(records) == 0:
+            raise ValueError("Exchange rate not found")
+
+        rate_list = []
+        for record in records:
+            rate_dict = {
+                "epoch": record["epoch"],
+                "PoolTokenExchangeRate": {
+                    "sui_amount": record["sui_amount"],
+                    "pool_token_amount": record["pool_token_amount"]
+                }
+            }
+            rate_list.append(rate_dict)
+
+        return {
+            "suiAddress": sui_address,
+            "pool_id": records[0]["pool_id"],
+            "active": records[0]["active"],
+            "rates": rate_list
+        }
+
+    except mysql.connector.Error as err:
+        logging.error(f"Error: {err}")
+        raise
+
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/")
+def read_root():
+    return RedirectResponse(url="/docs")
+
+
+router = APIRouter()
 # GET endpoint to retrieve system states filtered by network
-@app.get("/api/data")
-async def get_system_states(network: str = 'mainnet', epoch: int = None):
+@router.get(f"/historydata/")
+async def get_system_states(network: str = 'mainnet'):
     mydb = pool.get_connection()
     cursor = mydb.cursor()
     try:
@@ -121,54 +172,64 @@ async def get_system_states(network: str = 'mainnet', epoch: int = None):
         return system_states
     except mysql.connector.Error as err:
         logging.error(f"Error fetching system states: {err}")
-        raise HTTPException(status_code=500, detail="Database error")
     finally:
         cursor.close()
         mydb.close()
 
-
-@app.get("/token-exchange-rate/{sui_address}/{network}", response_model=ExchangeRate)
-async def get_token_exchange_rate(sui_address: str, network: str):
-    connection = pool.get_connection()
-    cursor = connection.cursor(dictionary=True)
-
+@router.get("/rates")
+async def get_rates(sui_address: str = Query(...), network: str = Query(...)):
     try:
-        query = f"SELECT * FROM validators_data WHERE suiAddress = '{sui_address}' AND network = '{network}'"
-        cursor.execute(query)
+        # Use the get_apy_data function to get data
+        data = get_apy_data(sui_address, network)
+        rate_list = data["rates"]
 
-        records = cursor.fetchall()
+        # Utilize the rate_list as in your previous script
+        unique_epochs = sorted(set(rate["epoch"] for rate in rate_list if rate["epoch"] != 0), reverse=True)
+        sorted_rates = sorted(rate_list, key=lambda x: x["epoch"], reverse=False)
+        average_apy_list = []
 
-        if records is None or len(records) == 0:
-            raise HTTPException(status_code=404, detail="Exchange rate not found")
+        for stake_subsidy_start_epoch in unique_epochs:
+            exchange_rates = [
+                rate for rate in sorted_rates
+                if rate["epoch"] >= stake_subsidy_start_epoch and (1.0 / (rate["PoolTokenExchangeRate"]["pool_token_amount"] / rate["PoolTokenExchangeRate"]["sui_amount"])) < 1.2
+            ][:31]
 
-        rate_list = []
-        for record in records:
-            rate_dict = {
-                "epoch": record["epoch"],
-                "PoolTokenExchangeRate": {
-                    "sui_amount": record["sui_amount"],
-                    "pool_token_amount": record["pool_token_amount"]
-                }
-            }
-            rate_list.append(rate_dict)
+            if len(exchange_rates) >= 2:
+                er_e = exchange_rates[1:]
+                er_e_1 = exchange_rates[:-1]
+                average_apy = sum(map(calculate_apy, er_e, er_e_1)) / len(er_e)
+            else:
+                average_apy = 0.0
+
+            average_apy_list.append({
+                "epoch": stake_subsidy_start_epoch,
+                "average_apy": average_apy
+            })
 
         return {
             "suiAddress": sui_address,
-            "pool_id": records[0]["pool_id"],
-            "active": records[0]["active"],
-            "rates": rate_list
+            "pool_id": data["pool_id"],
+            "active": data["active"],
+            "rates": rate_list,
+            "average_apy": average_apy_list
         }
 
-    except mysql.connector.Error as err:
-        logging.error(f"Error: {err}")
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    finally:
-        cursor.close()
-        connection.close()
+@router.get("/token-exchange-rate", response_model=ExchangeRate)
+async def get_token_exchange_rate(sui_address: str = Query(...), network: str = Query(...)):
+    try:
+        return get_apy_data(sui_address, network)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@app.get("/api/csv")
-async def download_system_states(network: str = 'mainnet', epoch: int = None, names: List[str] = Query(None)):
+@router.get("/historydata/csv")
+async def download_system_states(network: str = 'mainnet', names: List[str] = Query(None)):
     mydb = pool.get_connection()
     cursor = mydb.cursor()
     try:
@@ -232,6 +293,9 @@ async def download_system_states(network: str = 'mainnet', epoch: int = None, na
     finally:
         cursor.close()
         mydb.close()
+
+app.include_router(router, prefix="/api/v1")
+
 
 # Run the FastAPI application
 if __name__ == "__main__":
