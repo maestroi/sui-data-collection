@@ -90,6 +90,29 @@ def calculate_apy(rate_e, rate_e_1):
     er_e_1 = rate_e_1["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e_1["PoolTokenExchangeRate"]["sui_amount"]
     return (er_e_1 / er_e) ** 365 - 1.0
 
+def get_sui_address(name: str, network: str, table_name: str = "systemstate"):
+    connection = pool.get_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        query = f"SELECT sui_address FROM {table_name}  WHERE name = %s AND network = %s LIMIT 1"
+        cursor.execute(query, (name, network))
+        records = cursor.fetchall()
+
+        sui_address = records[0]["sui_address"]
+
+        return {
+            "suiAddress": sui_address,
+        }
+
+    except mysql.connector.Error as err:
+        logging.error(f"Error: {err}")
+        raise
+
+    finally:
+        cursor.close()
+        connection.close()
+
 def get_apy_data(sui_address: str, network: str, table_name: str = "validators_data"):
     connection = pool.get_connection()
     cursor = connection.cursor(dictionary=True)
@@ -131,7 +154,6 @@ def get_apy_data(sui_address: str, network: str, table_name: str = "validators_d
 @app.get("/")
 def read_root():
     return RedirectResponse(url="/docs")
-
 
 router = APIRouter()
 # GET endpoint to retrieve system states filtered by network
@@ -177,8 +199,10 @@ async def get_system_states(network: str = 'mainnet'):
         mydb.close()
 
 @router.get("/rates")
-async def get_rates(sui_address: str = Query(...), network: str = Query(...)):
+async def get_rates(name: str = Query(...), network: str = Query(...)):
     try:
+        sui_address = get_sui_address(name, network)
+
         # Use the get_apy_data function to get data
         data = get_apy_data(sui_address, network)
         rate_list = data["rates"]
@@ -207,6 +231,7 @@ async def get_rates(sui_address: str = Query(...), network: str = Query(...)):
             })
 
         return {
+            "name": name,
             "suiAddress": sui_address,
             "average_apy": average_apy_list
         }
