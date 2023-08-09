@@ -208,9 +208,6 @@ async def get_rates(sui_address: str = Query(...), network: str = Query(...)):
 
         return {
             "suiAddress": sui_address,
-            "pool_id": data["pool_id"],
-            "active": data["active"],
-            "rates": rate_list,
             "average_apy": average_apy_list
         }
 
