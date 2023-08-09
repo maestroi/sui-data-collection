@@ -90,7 +90,7 @@ def calculate_apy(rate_e, rate_e_1):
     er_e_1 = rate_e_1["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e_1["PoolTokenExchangeRate"]["sui_amount"]
     return (er_e_1 / er_e) ** 365 - 1.0
 
-def get_sui_address(name: str, network: str, table_name: str = "systemstate"):
+def get_sui_address(name: str, network: str, table_name: str = "system_state"):
     connection = pool.get_connection()
     cursor = connection.cursor(dictionary=True)
 
