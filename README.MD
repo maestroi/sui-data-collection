@@ -1,7 +1,3 @@
-Sure! Here's a generated README in markdown format for the Python application:
-
----
-
 # SUI Data Collection and Storage App
 
 This Python application fetches data from a JSON-RPC endpoint and stores it in an SQLite database. It also periodically updates additional data and provides scheduling functionality.
