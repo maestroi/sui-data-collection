@@ -92,18 +92,14 @@ def calculate_apy(rate_e, rate_e_1):
 
 def get_sui_address(name: str, network: str, table_name: str = "system_state"):
     connection = pool.get_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
 
     try:
         query = f"SELECT sui_address FROM {table_name}  WHERE name = %s AND network = %s LIMIT 1"
         cursor.execute(query, (name, network))
         records = cursor.fetchall()
-
-        sui_address = records[0]["sui_address"]
-
-        return {
-            "suiAddress": sui_address,
-        }
+        sui_address = records[0]
+        return sui_address[0]
 
     except mysql.connector.Error as err:
         logging.error(f"Error: {err}")
@@ -202,7 +198,6 @@ async def get_system_states(network: str = 'mainnet'):
 async def get_rates(name: str = Query(...), network: str = Query(...)):
     try:
         sui_address = get_sui_address(name, network)
-
         # Use the get_apy_data function to get data
         data = get_apy_data(sui_address, network)
         rate_list = data["rates"]
