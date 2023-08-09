@@ -203,7 +203,7 @@ async def get_rates(sui_address: str = Query(...), network: str = Query(...)):
 
             average_apy_list.append({
                 "epoch": stake_subsidy_start_epoch,
-                "average_apy": average_apy
+                "average_apy": average_apy * 100
             })
 
         return {
