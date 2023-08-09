@@ -152,7 +152,7 @@ const downloadCSV = async () => {
     // Build the names query parameter
     const namesParam = selectedProviders.value.map(name => `names=${encodeURIComponent(name)}`).join('&');
 
-    const url = `${baseUrl}/history/csv?${namesParam}&network=${encodeURIComponent(selectedNetwork.value)}`;
+    const url = `${baseUrl}/historydata/csv?${namesParam}&network=${encodeURIComponent(selectedNetwork.value)}`;
 
     const response = await axios.get(url, { responseType: 'blob' });
     const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
