@@ -80,10 +80,22 @@ def store_data_in_database(json_data, network):
             commission_rate = validator['commissionRate']
             stake = validator['stakingPoolSuiBalance']
 
-            cursor.execute('''INSERT INTO system_state VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)''',
-                        (epoch, network, sui_address, protocol_pubkey_bytes, network_pubkey_bytes, worker_pubkey_bytes,
-                            name, description, image_url, project_url, net_address, p2p_address,
-                            primary_address, worker_address, voting_power, gas_price, commission_rate, stake))
+            query = """
+            INSERT INTO system_state (
+                epoch, network, sui_address, protocol_pubkey_bytes, network_pubkey_bytes,
+                worker_pubkey_bytes, name, description, image_url, project_url, net_address,
+                p2p_address, primary_address, worker_address, voting_power, gas_price,
+                commission_rate, stake, apy
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
+            """
+            values = (
+                epoch, network, sui_address, protocol_pubkey_bytes, network_pubkey_bytes,
+                worker_pubkey_bytes, name, description, image_url, project_url, net_address,
+                p2p_address, primary_address, worker_address, voting_power, gas_price,
+                commission_rate, stake
+            )
+            cursor.execute(query, values)
             mydb.commit()
             logging.info(f"Data for {epoch} for validator {name} - {sui_address} - stored in the database successfully!")
 
@@ -121,8 +133,6 @@ def update_apy(api_url, network, epoch):
         logging.info("APY values updated in the database successfully!")
     except mysql.connector.Error as err:
         logging.error(f"Error updating row: {err}")
-
-
 
 def create_database(network):
     try:
@@ -273,7 +283,6 @@ def main():
 
     # Schedule the job to run every 60 minutes
     schedule.every(5).minutes.do(update_rate_change, network=network)
-
 
     # Run the scheduled tasks
     while True:
