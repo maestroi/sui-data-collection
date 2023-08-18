@@ -4,12 +4,16 @@ import json
 import logging
 import time
 import mysql.connector
+from requests.exceptions import ConnectionError, Timeout, RequestException
+
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s — %(message)s',
                     datefmt='%Y-%m-%d_%H:%M:%S',
                     handlers=[logging.StreamHandler()])
 
+MAX_RETRIES = 3  # Set the maximum number of retries
+BACKOFF_FACTOR = 1.5  # Define backoff factor for exponential delay
 
 def init_db_connection(config):
     return mysql.connector.connect(
@@ -18,6 +22,22 @@ def init_db_connection(config):
         password=config['mysql_password'],
         database=config['mysql_database']
     )
+
+
+def make_request(url, headers, data):
+    for i in range(MAX_RETRIES):
+        try:
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+            response.raise_for_status()  # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
+            return response
+        except (ConnectionError, Timeout) as e:
+            logging.error(f"Connection error or timeout: {e}. Retrying in {BACKOFF_FACTOR ** i} seconds.")
+            time.sleep(BACKOFF_FACTOR ** i)
+        except RequestException as e:
+            logging.error(f"Fatal error encountered: {e}. Exiting.")
+            return None
+    return None
+
 
 def create_table(cursor):
     cursor.execute("""
@@ -61,9 +81,9 @@ def get_dynamic_fields_paginated(url, exchange_rates_id, next_cursor=None):
         'params': [exchange_rates_id, next_cursor] if next_cursor else [exchange_rates_id]
     }
 
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    response = make_request(url, headers, data)
 
-    if response.status_code == 200:
+    if response and response.status_code == 200:
         response_json = response.json()
         data = response_json.get('result', {}).get('data', [])
         epochs = [int(item.get('name', {}).get('value')) for item in data] # Conversion to integer
@@ -74,6 +94,7 @@ def get_dynamic_fields_paginated(url, exchange_rates_id, next_cursor=None):
             epochs += get_dynamic_fields_paginated(url, exchange_rates_id, nextCursor) # Recursive call for the next page
         return epochs
     else:
+        logging.error('Error fetching data or no data returned.')
         return []
 
 def get_latest_sui_system_state(url):
@@ -87,12 +108,12 @@ def get_latest_sui_system_state(url):
         'method': 'suix_getLatestSuiSystemState',
     }
 
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    response = make_request(url, headers, data)
 
-    if response.status_code == 200:
+    if response and response.status_code == 200:
         return response.json()
     else:
-        return None
+        logging.error('Error fetching data or no data returned.')
 
 def get_dynamic_fields(url, exchange_rates_id):
     headers = {
@@ -106,12 +127,12 @@ def get_dynamic_fields(url, exchange_rates_id):
         'params': [exchange_rates_id]
     }
 
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    response = make_request(url, headers, data)
 
-    if response.status_code == 200:
+    if response and response.status_code == 200:
         return response.json()
     else:
-        return None
+        logging.error('Error fetching data or no data returned.')
 
 def get_dynamic_field_object(url, exchange_rates_id, epoch):
     headers = {
@@ -125,12 +146,12 @@ def get_dynamic_field_object(url, exchange_rates_id, epoch):
         'params': [exchange_rates_id, { 'type': 'u64', 'value': str(epoch) }] # Converted the epoch to a string
     }
 
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    response = make_request(url, headers, data)
 
-    if response.status_code == 200:
+    if response and response.status_code == 200:
         return response.json()
     else:
-        return None
+        logging.error('Error fetching data or no data returned.')
 
 if __name__ == "__main__":
     with open('config_testnet.json') as f:
@@ -176,7 +197,7 @@ if __name__ == "__main__":
                             db_conn.commit()  # Commit the transaction
                             logging.info(f'Epoch: {epoch}, PoolTokenAmount: {pool_token_amount}, SuiAmount: {sui_amount}')
 
-                        time.sleep(0.1)  # Sleep for 10 seconds to prevent too many requests
+                        time.sleep(0.5) 
                 else:
                     logging.info(f'Unable to get dynamic fields for exchangeRatesId {exchange_rates_id}')
     else:

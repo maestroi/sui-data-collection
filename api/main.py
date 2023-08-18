@@ -88,7 +88,7 @@ class ExchangeRate(BaseModel):
 def calculate_apy(rate_e, rate_e_1):
     er_e = rate_e["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e["PoolTokenExchangeRate"]["sui_amount"]
     er_e_1 = rate_e_1["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e_1["PoolTokenExchangeRate"]["sui_amount"]
-    return (er_e_1 / er_e) ** 365 - 1.0
+    return (er_e / er_e_1) ** 365 - 1.0
 
 def get_sui_address(name: str, network: str, table_name: str = "system_state"):
     connection = pool.get_connection()
@@ -198,6 +198,7 @@ async def get_system_states(network: str = 'mainnet'):
 async def get_rates(name: str = Query(...), network: str = Query(...)):
     try:
         sui_address = get_sui_address(name, network)
+        logging.info(sui_address)
         # Use the get_apy_data function to get data
         data = get_apy_data(sui_address, network)
         rate_list = data["rates"]
@@ -205,25 +206,38 @@ async def get_rates(name: str = Query(...), network: str = Query(...)):
         # Utilize the rate_list as in your previous script
         unique_epochs = sorted(set(rate["epoch"] for rate in rate_list if rate["epoch"] != 0), reverse=True)
         sorted_rates = sorted(rate_list, key=lambda x: x["epoch"], reverse=False)
+
         average_apy_list = []
 
-        for stake_subsidy_start_epoch in unique_epochs:
+       # logging.info(rate_list)
+
+        stake_subsidy_start_epoch = 1
+
+        unique_epochs_temp = [120]
+
+        for unique_epoch in unique_epochs_temp:
             exchange_rates = [
                 rate for rate in sorted_rates
-                if rate["epoch"] >= stake_subsidy_start_epoch and (1.0 / (rate["PoolTokenExchangeRate"]["pool_token_amount"] / rate["PoolTokenExchangeRate"]["sui_amount"])) < 1.2
-            ][:31]
+                if rate["epoch"] <= unique_epoch and rate["epoch"] >= stake_subsidy_start_epoch and (1.0 / (rate["PoolTokenExchangeRate"]["pool_token_amount"] / rate["PoolTokenExchangeRate"]["sui_amount"])) < 1.2][-31:]
 
             if len(exchange_rates) >= 2:
                 er_e = exchange_rates[1:]
+                logging.info(er_e)
+                logging.info("Exchange rate")
                 er_e_1 = exchange_rates[:-1]
+
+                logging.info(er_e_1)
                 average_apy = sum(map(calculate_apy, er_e, er_e_1)) / len(er_e)
             else:
                 average_apy = 0.0
 
             average_apy_list.append({
-                "epoch": stake_subsidy_start_epoch,
-                "average_apy": average_apy * 100
+                "epoch": unique_epoch,
+                "average_apy": average_apy
             })
+
+        logging.info(50 * "-")
+        logging.info(average_apy_list)
 
         return {
             "name": name,

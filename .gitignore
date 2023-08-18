@@ -27,3 +27,4 @@ dist-ssr
 *.sw?
 config_mainnet.json
 config_testnet.json
+.DS_Store

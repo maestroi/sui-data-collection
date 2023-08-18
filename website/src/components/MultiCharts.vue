@@ -115,7 +115,7 @@ const providers = ref([]);
 const networks = ['mainnet', 'testnet'];
 const fees = ['8', '10', '12'];
 const GasPrices = ['100', '200', '300', '500','1000'];
-const baseUrl = 'https://api.sui-data.com/api/v1';
+const baseUrl = 'http://localhost:8000/api/v1';
 
 
 const params = reactive({
@@ -140,9 +140,9 @@ const tableColumns = ref([
 const fetchData = async () => {
   try {
     const response = await axios.get(`${baseUrl}/historydata?network=${selectedNetwork.value}`);
-    //const apyResponse = await axios.get(`${baseUrl}/rates?name=${selectedProviders.value}&network=${selectedNetwork.value}`);
+    const apyResponse = await axios.get(`${baseUrl}/rates?name=${selectedProviders.value}&network=${selectedNetwork.value}`);
     data = response.data;
-    //apyData = apyResponse.data;
+    apyData = apyResponse.data;
     providers.value = getUniqueProviders();
     updateChartData();
     updateTable();
@@ -298,7 +298,7 @@ const updateChartData = () => {
     const epochs = filteredData.map((item) => item.epoch);
     const gasPrices = filteredData.map((item) => item.gas_price);
     const apys = filteredData.map((item) => item.apy * 100);
-    // const apyValues = apyData.average_apy.map(item => item.average_apy);
+    const apyValues = apyData.average_apy.map(item => item.average_apy);
     const commissionRates = filteredData.map((item) => item.commission_rate / 100);
     const votingPowers = filteredData.map((item) => item.voting_power);
     const stakeAmounts = filteredData.map((item) => item.stake / 1000000000);
@@ -319,7 +319,7 @@ const updateChartData = () => {
     allData.votingPowers.push(createDataset('Voting Power', votingPowers));
     allData.stakeAmounts.push(createDataset('Stake Amount', stakeAmounts));
     allData.rateChanges.push(createDataset('Change Rate APY', rateChange));
-    //allData.apys2.push(createDataset('APY', apyValues.slice(-epochs.length)));
+    allData.apys2.push(createDataset('APY', apyValues.slice(-epochs.length)));
 
   });
 
@@ -330,7 +330,7 @@ const updateChartData = () => {
   initializeAndOrUpdateChart('epoch-voting-power-chart', epochs, allData.votingPowers);
   initializeAndOrUpdateChart('epoch-stake-chart', epochs, allData.stakeAmounts);
   initializeAndOrUpdateChart('epoch-rate-change-chart', epochs, allData.rateChanges);
-  // initializeAndOrUpdateChart('epoch-apy-chart-custom', epochs, allData.apys2);
+  initializeAndOrUpdateChart('epoch-apy-chart-custom', epochs, allData.apys2);
 };
 
 // Helper function to generate a random color
