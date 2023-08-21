@@ -85,10 +85,12 @@ class ExchangeRate(BaseModel):
     active: bool
     rates: List[dict]
 
+
 def calculate_apy(rate_e, rate_e_1):
     er_e = rate_e["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e["PoolTokenExchangeRate"]["sui_amount"]
     er_e_1 = rate_e_1["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e_1["PoolTokenExchangeRate"]["sui_amount"]
-    return (er_e / er_e_1) ** 365 - 1.0
+    return (er_e_1 / er_e) ** 365 - 1.0
+
 
 def get_sui_address(name: str, network: str, table_name: str = "system_state"):
     connection = pool.get_connection()
@@ -204,7 +206,7 @@ async def get_rates(name: str = Query(...), network: str = Query(...)):
         rate_list = data["rates"]
 
         # Utilize the rate_list as in your previous script
-        unique_epochs = sorted(set(rate["epoch"] for rate in rate_list if rate["epoch"] != 0), reverse=True)
+        unique_epochs = sorted(set(rate["epoch"] for rate in data["rates"] if rate["epoch"] != 0), reverse=False)
         sorted_rates = sorted(rate_list, key=lambda x: x["epoch"], reverse=False)
 
         average_apy_list = []
@@ -215,18 +217,14 @@ async def get_rates(name: str = Query(...), network: str = Query(...)):
 
         unique_epochs_temp = [120]
 
-        for unique_epoch in unique_epochs_temp:
+        for unique_epoch in unique_epochs:
             exchange_rates = [
                 rate for rate in sorted_rates
                 if rate["epoch"] <= unique_epoch and rate["epoch"] >= stake_subsidy_start_epoch and (1.0 / (rate["PoolTokenExchangeRate"]["pool_token_amount"] / rate["PoolTokenExchangeRate"]["sui_amount"])) < 1.2][-31:]
 
             if len(exchange_rates) >= 2:
                 er_e = exchange_rates[1:]
-                logging.info(er_e)
-                logging.info("Exchange rate")
                 er_e_1 = exchange_rates[:-1]
-
-                logging.info(er_e_1)
                 average_apy = sum(map(calculate_apy, er_e, er_e_1)) / len(er_e)
             else:
                 average_apy = 0.0
@@ -235,10 +233,6 @@ async def get_rates(name: str = Query(...), network: str = Query(...)):
                 "epoch": unique_epoch,
                 "average_apy": average_apy
             })
-
-        logging.info(50 * "-")
-        logging.info(average_apy_list)
-
         return {
             "name": name,
             "suiAddress": sui_address,

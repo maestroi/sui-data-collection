@@ -18,6 +18,14 @@
           </option>
         </select>
       </div>
+      <div class="selection_epoch">
+        <label for="selectedEpochLimit">Epochs </label>
+        <select v-model="selectedEpochLimit" @change="updateChartData">
+          <option v-for="epoch in epochs" :key="epoch" :value="epoch">
+            {{ epoch }}
+          </option>
+        </select>
+      </div>
       <!--
       <div class="selection">
         <label for="provider">Fee (WIP)</label>
@@ -46,8 +54,8 @@
         <canvas id="epoch-apy-chart" ref="apyChart"></canvas>
       </div>
       <div class="chart">
-        <h2>Stake</h2>
-        <canvas id="epoch-stake-chart" ref="stakeChart"></canvas>
+        <h2>APY Custom calculation</h2>
+        <canvas id="epoch-apy-chart-custom" ref="customApyChart"></canvas>
       </div>
       <div class="chart">
         <h2>Gas Price</h2>
@@ -66,8 +74,8 @@
         <canvas id="epoch-rate-change-chart" ref="changeRateChart"></canvas>
       </div>
       <div class="chart">
-        <h2>APY Custom calculation</h2>
-        <canvas id="epoch-apy-chart-custom" ref="customApyChart"></canvas>
+        <h2>Stake</h2>
+        <canvas id="epoch-stake-chart" ref="stakeChart"></canvas>
       </div>
     </div>
     <div class="table-div">
@@ -99,6 +107,7 @@ Chart.register(...registerables);
 const chartRef = ref(null);
 const selectedProviders = ref(['Blockdaemon']);
 const selectedNetwork = ref('mainnet');
+const selectedEpochLimit = ref('30');
 const selectedFee = ref('8')
 const selectedGasPrice = ref('1000')
 const gasPriceChart = ref(null);
@@ -113,10 +122,10 @@ let data = [];
 let apyData = [];
 const providers = ref([]);
 const networks = ['mainnet', 'testnet'];
+const epochs = ['10', '20', '30', '50', '100', 'all']
 const fees = ['8', '10', '12'];
 const GasPrices = ['100', '200', '300', '500','1000'];
 const baseUrl = 'http://localhost:8000/api/v1';
-
 
 const params = reactive({
         current_page: 1,
@@ -289,16 +298,23 @@ const updateChartData = () => {
     rateChanges: [],
   };
 
+  const limit = selectedEpochLimit.value === 'all' 
+              ? apyData.average_apy.length 
+              : parseInt(selectedEpochLimit.value);
+
+  const all_epochs = apyData && Array.isArray(apyData.average_apy) 
+                    ? apyData.average_apy.slice(-limit).map((item) => item.epoch) 
+                    : [];
   // Create datasets for each selected provider
   if (selectedProviders.value.length === 0) return
 
   selectedProviders.value.forEach((selectedProvider) => {
     const filteredData = data.filter((item) => item.name === selectedProvider && item.network === selectedNetwork.value);
-
-    const epochs = filteredData.map((item) => item.epoch);
     const gasPrices = filteredData.map((item) => item.gas_price);
     const apys = filteredData.map((item) => item.apy * 100);
-    const apyValues = apyData.average_apy.map(item => item.average_apy);
+    const apyValues = apyData && Array.isArray(apyData.average_apy) 
+                  ? apyData.average_apy.slice(-limit).map(item => item.average_apy * 100) 
+                  : [];
     const commissionRates = filteredData.map((item) => item.commission_rate / 100);
     const votingPowers = filteredData.map((item) => item.voting_power);
     const stakeAmounts = filteredData.map((item) => item.stake / 1000000000);
@@ -319,7 +335,7 @@ const updateChartData = () => {
     allData.votingPowers.push(createDataset('Voting Power', votingPowers));
     allData.stakeAmounts.push(createDataset('Stake Amount', stakeAmounts));
     allData.rateChanges.push(createDataset('Change Rate APY', rateChange));
-    allData.apys2.push(createDataset('APY', apyValues.slice(-epochs.length)));
+    allData.apys2.push(createDataset('APY', apyValues));
 
   });
 
@@ -330,7 +346,7 @@ const updateChartData = () => {
   initializeAndOrUpdateChart('epoch-voting-power-chart', epochs, allData.votingPowers);
   initializeAndOrUpdateChart('epoch-stake-chart', epochs, allData.stakeAmounts);
   initializeAndOrUpdateChart('epoch-rate-change-chart', epochs, allData.rateChanges);
-  initializeAndOrUpdateChart('epoch-apy-chart-custom', epochs, allData.apys2);
+  initializeAndOrUpdateChart('epoch-apy-chart-custom', all_epochs, allData.apys2);
 };
 
 // Helper function to generate a random color
