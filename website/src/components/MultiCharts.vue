@@ -126,7 +126,7 @@ const networks = ['mainnet', 'testnet'];
 const epochs = ['10', '20', '30', '50', '100', 'all']
 const fees = ['8', '10', '12'];
 const GasPrices = ['100', '200', '300', '500','1000'];
-const baseUrl = 'http://localhost:8000/api/v1';
+const baseUrl = 'https://api.sui-data.com/api/v1';
 
 const params = reactive({
         current_page: 1,
