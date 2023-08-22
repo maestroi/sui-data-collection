@@ -298,35 +298,33 @@ const updateChartData = () => {
     rateChanges: [],
   };
 
-  const limit = selectedEpochLimit.value === 'all' 
-              ? apyData.average_apy.length 
+  const limit = selectedEpochLimit.value === 'all'
+              ? apyData.average_apy.length
               : parseInt(selectedEpochLimit.value);
 
   const latestEpoch = Math.max(...data.map(item => item.epoch));
   const desiredEpochs = Array.from({ length: limit }, (_, i) => latestEpoch - i);
   const filteredData = data.filter(item => desiredEpochs.includes(item.epoch));
 
-  console.log(filteredData)
+  const epochs = [...new Set(data.map(item => item.epoch))];
 
-  const epochs = [...new Set(filteredData.map(item => item.epoch))].slice(-limit);
-
-  const all_epochs = apyData && Array.isArray(apyData.average_apy) 
-                    ? apyData.average_apy.slice(-limit).map((item) => item.epoch) 
+  const all_epochs = apyData && Array.isArray(apyData.average_apy)
+                    ? apyData.average_apy.slice(-limit).map((item) => item.epoch)
                     : [];
   // Create datasets for each selected provider
   if (selectedProviders.value.length === 0) return
 
   selectedProviders.value.forEach((selectedProvider) => {
     const filteredData = data.filter((item) => item.name === selectedProvider && item.network === selectedNetwork.value);
-    const gasPrices = filteredData.slice(-limit).map((item) => item.gas_price);
-    const apys = filteredData.slice(-limit).map((item) => item.apy * 100);
-    const apyValues = apyData && Array.isArray(apyData.average_apy) 
-                  ? apyData.average_apy.slice(-limit).map(item => item.average_apy * 100) 
+    const gasPrices = filteredData.map((item) => item.gas_price);
+    const apys = filteredData.map((item) => item.apy * 100);
+    const apyValues = apyData && Array.isArray(apyData.average_apy)
+                  ? apyData.average_apy.slice(-limit).map(item => item.average_apy * 100)
                   : [];
-    const commissionRates = filteredData.slice(-limit).map((item) => item.commission_rate / 100);
-    const votingPowers = filteredData.slice(-limit).map((item) => item.voting_power);
-    const stakeAmounts = filteredData.slice(-limit).map((item) => item.stake / 1000000000);
-    const rateChange = filteredData.slice(-limit).map((item) => item.rate_change);
+    const commissionRates = filteredData.map((item) => item.commission_rate / 100);
+    const votingPowers = filteredData.map((item) => item.voting_power);
+    const stakeAmounts = filteredData.map((item) => item.stake / 1000000000);
+    const rateChange = filteredData.map((item) => item.rate_change);
 
     const createDataset = (label, values) => ({
       label: selectedProvider,
