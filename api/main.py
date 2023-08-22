@@ -91,7 +91,6 @@ def calculate_apy(rate_e, rate_e_1):
     er_e_1 = rate_e_1["PoolTokenExchangeRate"]["pool_token_amount"] / rate_e_1["PoolTokenExchangeRate"]["sui_amount"]
     return (er_e_1 / er_e) ** 365 - 1.0
 
-
 def get_sui_address(name: str, network: str, table_name: str = "system_state"):
     connection = pool.get_connection()
     cursor = connection.cursor()
@@ -195,6 +194,55 @@ async def get_system_states(network: str = 'mainnet'):
     finally:
         cursor.close()
         mydb.close()
+
+@router.get("/rates/simulate")
+async def get_rates(name: str = Query(...), network: str = Query(...)):
+    try:
+        sui_address = get_sui_address(name, network)
+        logging.info(sui_address)
+        # Use the get_apy_data function to get data
+        data = get_apy_data(sui_address, network)
+        rate_list = data["rates"]
+
+        # Utilize the rate_list as in your previous script
+        unique_epochs = sorted(set(rate["epoch"] for rate in data["rates"] if rate["epoch"] != 0), reverse=False)
+        sorted_rates = sorted(rate_list, key=lambda x: x["epoch"], reverse=False)
+
+        average_apy_list = []
+
+       # logging.info(rate_list)
+
+        stake_subsidy_start_epoch = 1
+
+        unique_epochs_temp = [120]
+
+        for unique_epoch in unique_epochs:
+            exchange_rates = [
+                rate for rate in sorted_rates
+                if rate["epoch"] <= unique_epoch and rate["epoch"] >= stake_subsidy_start_epoch and (1.0 / (rate["PoolTokenExchangeRate"]["pool_token_amount"] / rate["PoolTokenExchangeRate"]["sui_amount"])) < 1.2][-31:]
+
+            if len(exchange_rates) >= 2:
+                er_e = exchange_rates[1:]
+                er_e_1 = exchange_rates[:-1]
+                average_apy = sum(map(calculate_apy, er_e, er_e_1)) / len(er_e)
+            else:
+                average_apy = 0.0
+
+            average_apy_list.append({
+                "epoch": unique_epoch,
+                "average_apy": average_apy
+            })
+        return {
+            "name": name,
+            "suiAddress": sui_address,
+            "average_apy": average_apy_list
+        }
+
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @router.get("/rates")
 async def get_rates(name: str = Query(...), network: str = Query(...)):
